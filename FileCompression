@@ -1,0 +1,89 @@
+package FileCompression;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.awt.image.WritableRaster;
+import java.io.*;
+import java.util.zip.*;
+
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.ImageOutputStream;
+
+
+public class Compression {
+	
+
+	
+	public static RenderedImage ImageCompress(RenderedImage source, File destination) throws IOException{
+//		RenderedImage image = ImageIO.read(source);
+		RenderedImage image = source;
+		ImageWriter Writer = ImageIO.getImageWritersByFormatName("png").next();
+		ImageWriteParam Para = Writer.getDefaultWriteParam();
+		Para.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+		Para.setCompressionQuality(0f);
+		IIOImage outputImage = null;
+		
+		try(ImageOutputStream output = ImageIO.createImageOutputStream(destination)){
+			Writer.setOutput(output);
+			outputImage = new IIOImage(image, null, null);
+			Writer.write(null, outputImage, Para);
+		}
+		
+		Writer.dispose();
+		return (RenderedImage) outputImage;
+		
+		
+	}
+	
+	private static int[][] readFrame(InputStream src, int width, int height) 
+			throws IOException {
+		int[][] frame_data = new int[width][height];
+		for (int y=0; y<height; y++) {
+			for (int x=0; x<width; x++) {
+				frame_data[x][y] = src.read();
+			}
+		}
+		return frame_data;
+	}
+	
+	public static BufferedImage getImageFromArray(int[][] pixel, int width, int height) {
+		BufferedImage image = new BufferedImage(pixel[0].length, pixel.length, BufferedImage.TYPE_INT_ARGB);
+		WritableRaster raster = image.getRaster();
+	    int[] pxlsr=new int[pixel[0].length*pixel.length];
+	    int k=0;
+	    for(int i=0;i<pixel.length;i++)for(int j=0;j<pixel[0].length;j++)pxlsr[k++]=pixel[i][j];
+	    raster.setPixels(0,0,pixel[0].length-10,pixel.length-10,pxlsr);//index out of bounds error here...
+	    return image;
+    }
+	
+	public static void main(String[] args) throws IOException{
+		File source = new File("C:\\Users\\Will\\Desktop\\bunny.720p.mp4");
+		File destination = new File("C:\\Users\\Will\\Desktop\\Compressed.mp4");
+		InputStream is = new FileInputStream(source);
+		OutputStream out = new FileOutputStream(destination);
+		File Scrap = new File("C:\\Users\\Will\\Desktop\\Scrap.png");
+		
+		
+		int width = 800;
+		int height = 450;
+		int num_frames = 150;
+		try{
+			for(int i = 1; i <= num_frames; i++){
+				BufferedImage i1 = getImageFromArray(readFrame(is, width, height), width, height);
+				ImageCompress(i1, Scrap);
+			}
+			
+		}
+		catch(IOException e){
+			System.out.println(e);
+		}
+		
+		is.close();
+		out.close();
+		 
+	}
+
+}
